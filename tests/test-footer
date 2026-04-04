@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# tests/test-footer — structural validator for the site footer
+# Satisfies: @co-1 (brand identity present throughout)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FOOTER="$ROOT/src/components/Footer.astro"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Footer structural tests ==="
+
+[[ -f "$FOOTER" ]] && pass "Footer.astro exists" || fail "Footer.astro missing"
+
+grep -q 'God Object\|GOD OBJECT' "$FOOTER" && pass "Footer contains company name" || fail "Footer missing company name"
+grep -q '©\|&copy;\|copyright'   "$FOOTER" && pass "Footer contains copyright"    || fail "Footer missing copyright"
+grep -q 'github\|GitHub'         "$FOOTER" && pass "Footer has GitHub link"        || fail "Footer missing GitHub link"
+grep -q 'hello@\|mailto:'        "$FOOTER" && pass "Footer has contact email"      || fail "Footer missing contact email"
+
+grep -q 'Footer' "$ROOT/src/pages/index.astro" \
+  && pass "index.astro includes Footer" || fail "index.astro missing Footer"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

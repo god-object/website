@@ -1,0 +1,31 @@
+---
+// Footer — copyright, GitHub, contact email.
+// Satisfies: @co-1 (brand identity present at page end)
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-white/5 px-6 py-10 mt-0">
+  <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-go-accent/40 font-mono text-xs">
+
+    <!-- Copyright — @co-1 -->
+    <p>© {year} God Object</p>
+
+    <!-- Links — @co-1 -->
+    <nav aria-label="Footer navigation" class="flex items-center gap-8">
+      <a
+        href="https://github.com/godobject"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-go-white transition-colors tracking-widest uppercase"
+      >
+        GitHub
+      </a>
+      <a
+        href="mailto:hello@godobject.dev"
+        class="hover:text-go-white transition-colors"
+      >
+        hello@godobject.dev
+      </a>
+    </nav>
+  </div>
+</footer>
