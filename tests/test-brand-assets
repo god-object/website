@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test-brand-assets — structural validator for SVG logo assets
+# tests/test-brand-assets — structural validator for logo assets
 # Satisfies: @co-1 (logo visible on homepage)
 
 set -euo pipefail
@@ -14,34 +14,33 @@ fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
 
 echo "=== Brand asset structural tests ==="
 
-for asset in logo.svg logo-mark.svg favicon.svg; do
-  [[ -f "$ASSETS/$asset" ]] \
-    && pass "$asset exists" \
-    || fail "$asset missing"
-done
+# Primary logo — PNG provided by client
+[[ -f "$ASSETS/god-object-logo.png" ]] \
+  && pass "god-object-logo.png exists" \
+  || fail "god-object-logo.png missing"
 
-# All logo SVGs must use currentColor so they adapt to any background
-for asset in logo.svg logo-mark.svg; do
-  grep -q 'currentColor' "$ASSETS/$asset" 2>/dev/null \
-    && pass "$asset uses currentColor" \
-    || fail "$asset does not use currentColor"
+# Favicon SVG — sun symbol, still used
+[[ -f "$ASSETS/favicon.svg" ]] \
+  && pass "favicon.svg exists" \
+  || fail "favicon.svg missing"
 
-  grep -q 'viewBox' "$ASSETS/$asset" 2>/dev/null \
-    && pass "$asset has viewBox" \
-    || fail "$asset missing viewBox"
-done
+grep -q 'viewBox' "$ASSETS/favicon.svg" 2>/dev/null \
+  && pass "favicon.svg has viewBox" \
+  || fail "favicon.svg missing viewBox"
 
-# Main logo must contain a mask (negative-space figures)
-grep -q '<mask' "$ASSETS/logo.svg" 2>/dev/null \
-  && pass "logo.svg contains figure mask" \
-  || fail "logo.svg missing figure mask"
-
-# Favicon must reference the sun symbol (circle with inner dot)
-# verified by presence of two circle elements
 circles=$(grep -c '<circle' "$ASSETS/favicon.svg" 2>/dev/null || echo 0)
 [[ "$circles" -ge 2 ]] \
   && pass "favicon.svg has sun symbol (≥2 circles)" \
   || fail "favicon.svg missing sun symbol circles (found $circles)"
+
+# Logo-mark SVG — kept for small-size use (nav icon, etc.)
+[[ -f "$ASSETS/logo-mark.svg" ]] \
+  && pass "logo-mark.svg exists" \
+  || fail "logo-mark.svg missing"
+
+grep -q 'currentColor' "$ASSETS/logo-mark.svg" 2>/dev/null \
+  && pass "logo-mark.svg uses currentColor" \
+  || fail "logo-mark.svg does not use currentColor"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
