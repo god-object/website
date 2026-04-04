@@ -1,0 +1,128 @@
+---
+// Navigation bar — fixed top, logo mark + anchor links, mobile hamburger.
+// Satisfies: @co-4 (mobile responsive navigation)
+import logoMark from "../assets/logo-mark.svg?raw";
+---
+
+<!--
+  fixed top-0: stays visible while scrolling — @co-4.
+  backdrop-blur + semi-transparent bg: content readable beneath nav as
+  user scrolls down into sections.
+-->
+<nav
+  class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between
+         px-6 py-4 backdrop-blur-sm bg-go-black/80 border-b border-white/5"
+  aria-label="Main navigation"
+>
+  <!-- Logo mark + wordmark — links back to top -->
+  <a href="#" class="flex items-center gap-3 group" aria-label="God Object — home">
+    <!--
+      logo-mark SVG inline: scales with font, inherits currentColor.
+      @co-4 — mark stays readable at all viewport widths.
+    -->
+    <span
+      class="w-7 h-auto text-go-white opacity-90 group-hover:opacity-100 transition-opacity"
+      set:html={logoMark}
+    />
+    <span class="font-mono text-xs tracking-[0.3em] text-go-accent/70 group-hover:text-go-accent transition-colors hidden sm:inline">
+      GOD OBJECT
+    </span>
+  </a>
+
+  <!-- Desktop links — hidden on mobile, shown sm+ -->
+  <ul class="hidden sm:flex items-center gap-8" role="list">
+    <li>
+      <a href="#work"
+         class="font-mono text-xs tracking-widest uppercase text-go-accent/60
+                hover:text-go-white transition-colors">
+        Work
+      </a>
+    </li>
+    <li>
+      <a href="#emello"
+         class="font-mono text-xs tracking-widest uppercase text-go-accent/60
+                hover:text-go-white transition-colors">
+        Emello
+      </a>
+    </li>
+    <li>
+      <a href="#contact"
+         class="font-mono text-xs tracking-widest uppercase text-go-accent/60
+                hover:text-go-white transition-colors border border-white/20
+                hover:border-white/60 px-4 py-1.5 transition-all">
+        Contact
+      </a>
+    </li>
+  </ul>
+
+  <!--
+    Hamburger — visible on mobile only.
+    Toggles a full-screen mobile menu via JS below.
+    aria-expanded tracks open/closed state — @co-4.
+  -->
+  <button
+    id="menu-toggle"
+    aria-expanded="false"
+    aria-controls="mobile-menu"
+    aria-label="Open navigation menu"
+    class="sm:hidden flex flex-col gap-1.5 p-2 -mr-2"
+  >
+    <span class="block w-5 h-px bg-go-white transition-all duration-200" id="bar1"></span>
+    <span class="block w-5 h-px bg-go-white transition-all duration-200" id="bar2"></span>
+    <span class="block w-5 h-px bg-go-white transition-all duration-200" id="bar3"></span>
+  </button>
+</nav>
+
+<!--
+  Mobile menu — full-screen overlay, hidden by default.
+  @co-4 — all nav links reachable on small screens.
+-->
+<div
+  id="mobile-menu"
+  class="fixed inset-0 z-40 bg-go-black flex flex-col items-center justify-center
+         gap-10 sm:hidden hidden"
+  aria-hidden="true"
+>
+  <a href="#work"    class="font-mono text-2xl tracking-widest uppercase" onclick="closeMenu()">Work</a>
+  <a href="#emello"  class="font-mono text-2xl tracking-widest uppercase" onclick="closeMenu()">Emello</a>
+  <a href="#contact" class="font-mono text-2xl tracking-widest uppercase" onclick="closeMenu()">Contact</a>
+</div>
+
+<script>
+  // Mobile menu toggle — @co-4
+  const toggle = document.getElementById("menu-toggle")!;
+  const menu   = document.getElementById("mobile-menu")!;
+  const bar1   = document.getElementById("bar1")!;
+  const bar2   = document.getElementById("bar2")!;
+  const bar3   = document.getElementById("bar3")!;
+
+  function openMenu() {
+    menu.classList.remove("hidden");
+    menu.setAttribute("aria-hidden", "false");
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-label", "Close navigation menu");
+    // Animate bars into an X
+    bar1.style.transform = "translateY(6px) rotate(45deg)";
+    bar2.style.opacity   = "0";
+    bar3.style.transform = "translateY(-6px) rotate(-45deg)";
+  }
+
+  function closeMenu() {
+    menu.classList.add("hidden");
+    menu.setAttribute("aria-hidden", "true");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Open navigation menu");
+    bar1.style.transform = "";
+    bar2.style.opacity   = "";
+    bar3.style.transform = "";
+  }
+
+  toggle.addEventListener("click", () => {
+    toggle.getAttribute("aria-expanded") === "true" ? closeMenu() : openMenu();
+  });
+
+  // Close on any anchor click within mobile menu
+  menu.querySelectorAll("a").forEach(a =>
+    a.addEventListener("click", closeMenu)
+  );
+</script>

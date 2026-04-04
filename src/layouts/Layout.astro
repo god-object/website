@@ -1,6 +1,8 @@
 ---
 // Base page layout — dark background, brand fonts, global meta.
 // @co-1, @co-4 — consistent shell across all page sections
+import Nav from "../components/Nav.astro";
+
 interface Props {
   title?: string;
   description?: string;
@@ -42,6 +44,7 @@ const {
     @co-1 — dark theme is the primary brand expression.
   -->
   <body class="bg-go-black text-go-white font-sans antialiased">
+    <Nav />
     <slot />
   </body>
 </html>

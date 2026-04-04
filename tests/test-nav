@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# tests/test-nav — structural validator for the navigation bar
+# Satisfies: @co-4 (mobile responsive nav)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NAV="$ROOT/src/components/Nav.astro"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Nav structural tests ==="
+
+[[ -f "$NAV" ]] && pass "Nav.astro exists" || fail "Nav.astro missing"
+
+grep -q 'logo-mark'   "$NAV" && pass "Nav references logo mark"    || fail "Nav missing logo mark"
+grep -q '#work'       "$NAV" && pass "Nav links to #work"           || fail "Nav missing #work link"
+grep -q '#emello'     "$NAV" && pass "Nav links to #emello"         || fail "Nav missing #emello link"
+grep -q '#contact'    "$NAV" && pass "Nav links to #contact"        || fail "Nav missing #contact link"
+grep -q 'fixed\|sticky' "$NAV" && pass "Nav is fixed/sticky"       || fail "Nav not fixed or sticky"
+grep -q 'hamburger\|menu-toggle\|aria-expanded' "$NAV" \
+  && pass "Nav has mobile menu toggle"  || fail "Nav missing mobile menu toggle"
+
+grep -q 'Nav' "$ROOT/src/layouts/Layout.astro" \
+  && pass "Layout includes Nav"         || fail "Layout does not include Nav"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]
