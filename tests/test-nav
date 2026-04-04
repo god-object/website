@@ -24,6 +24,15 @@ grep -q 'fixed\|sticky' "$NAV" && pass "Nav is fixed/sticky"       || fail "Nav 
 grep -q 'hamburger\|menu-toggle\|aria-expanded' "$NAV" \
   && pass "Nav has mobile menu toggle"  || fail "Nav missing mobile menu toggle"
 
+# Wordmark must be visible at all sizes — @co-1, @co-4
+# Find the span wrapping GOD OBJECT (within 3 lines) and check for hidden class
+godobj_ctx=$(grep -A1 -B1 'GOD OBJECT' "$NAV")
+if echo "$godobj_ctx" | grep -q 'hidden'; then
+  fail "Nav wordmark is hidden on mobile (hidden class on surrounding span)"
+else
+  pass "Nav wordmark visible at all viewport sizes"
+fi
+
 grep -q 'Nav' "$ROOT/src/layouts/Layout.astro" \
   && pass "Layout includes Nav"         || fail "Layout does not include Nav"
 
