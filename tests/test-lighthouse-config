@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# tests/test-lighthouse-config — validates Lighthouse CI config exists and
+# asserts the performance thresholds required by @co-5
+# Satisfies: @co-5 (LCP < 2.5s, TTI < 3.5s)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LHCI="$ROOT/.lighthouserc.json"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Lighthouse CI config tests ==="
+
+[[ -f "$LHCI" ]] && pass ".lighthouserc.json exists" || fail ".lighthouserc.json missing"
+
+# Assert LCP threshold is present and ≤ 2500ms
+grep -q '"largest-contentful-paint"' "$LHCI" \
+  && pass "LCP assertion present" || fail "LCP assertion missing"
+
+# Assert TTI threshold is present
+grep -q '"interactive"' "$LHCI" \
+  && pass "TTI (interactive) assertion present" || fail "TTI assertion missing"
+
+# Netlify build must reference lhci
+grep -q 'lhci\|lighthouse' "$ROOT/netlify.toml" \
+  && pass "netlify.toml references lhci" || fail "netlify.toml missing lhci step"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

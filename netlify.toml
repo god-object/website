@@ -1,6 +1,7 @@
 # Netlify deploy config — ADR-003 (Netlify hosting)
 [build]
-  command   = "npm run build"
+  # @co-5 — lhci run after build asserts LCP < 2.5s and TTI < 3.5s
+  command   = "npm run build && npx lhci autorun"
   publish   = "dist"
 
 [build.environment]

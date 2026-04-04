@@ -23,6 +23,7 @@ run_suite "hero"         "$ROOT/tests/test-hero"
 run_suite "nav"          "$ROOT/tests/test-nav"
 run_suite "services"     "$ROOT/tests/test-services"
 run_suite "footer"       "$ROOT/tests/test-footer"
+run_suite "lighthouse"   "$ROOT/tests/test-lighthouse-config"
 
 echo ""
 echo "=== Test run complete: $PASS suite(s) passed, $FAIL suite(s) failed ==="
