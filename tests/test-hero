@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# tests/test-hero — structural validator for the homepage hero section
+# Satisfies: @co-1 (logo, name, headline above fold), @cl-4 (CTA to contact)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Hero structural tests ==="
+
+# Layout and component files exist
+[[ -f "$ROOT/src/layouts/Layout.astro" ]]     && pass "Layout.astro exists"    || fail "Layout.astro missing"
+[[ -f "$ROOT/src/components/Hero.astro" ]]    && pass "Hero.astro exists"      || fail "Hero.astro missing"
+
+# index.astro wires up the layout and hero
+grep -q 'Layout'    "$ROOT/src/pages/index.astro" && pass "index uses Layout"  || fail "index does not import Layout"
+grep -q 'Hero'      "$ROOT/src/pages/index.astro" && pass "index uses Hero"    || fail "index does not import Hero"
+
+# Hero contains the required content — @co-1
+grep -q 'god-object-logo' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero references logo"               || fail "Hero missing logo reference"
+
+grep -q 'GOD OBJECT' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero contains company name"         || fail "Hero missing company name"
+
+grep -q 'Omniscient by design' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero contains headline"             || fail "Hero missing headline"
+
+grep -q 'nothing delegated' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero contains subheading"           || fail "Hero missing subheading copy"
+
+# CTA links to contact section — @cl-4
+grep -q '#contact' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero CTA links to #contact"         || fail "Hero CTA missing #contact link"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

@@ -1,0 +1,47 @@
+---
+// Base page layout — dark background, brand fonts, global meta.
+// @co-1, @co-4 — consistent shell across all page sections
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "God Object",
+  description = "Bespoke software for problems worth solving.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <!-- Favicon — sun symbol ⊙, reference to "sun-god" / God Object -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Brand fonts via Google Fonts.
+      Inter — body and UI text.
+      JetBrains Mono — company name, code-adjacent elements.
+      @co-4 — preconnect reduces font load latency on mobile.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <!--
+    go-black background and go-white text set globally.
+    @co-1 — dark theme is the primary brand expression.
+  -->
+  <body class="bg-go-black text-go-white font-sans antialiased">
+    <slot />
+  </body>
+</html>

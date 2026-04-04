@@ -1,13 +1,21 @@
 ---
-// Placeholder — content added in subsequent tasks (hero @co-1, services @co-2, etc.)
+// Homepage — assembles all page sections in order.
+// Each section is a standalone component tracing to its BDD scenario tags.
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>God Object</title>
-  </head>
-  <body>
-    <p>Coming soon.</p>
-  </body>
-</html>
+
+<Layout
+  title="God Object — Bespoke software"
+  description="We take the whole problem. Architecture, implementation, deployment — nothing delegated, nothing abstracted away."
+>
+  <!-- @co-1, @cl-4 -->
+  <Hero />
+
+  <!--
+    Remaining sections added in subsequent tasks:
+    @co-2 — Services  (demo-opr.5)
+    @co-3, @em-1..4 — Emello  (demo-7mb)
+    @cl-1..3 — Contact  (demo-tra)
+  -->
+</Layout>

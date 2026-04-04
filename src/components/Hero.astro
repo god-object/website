@@ -1,0 +1,84 @@
+---
+// Hero section — full-viewport opening statement.
+// Satisfies: @co-1 (logo, name, headline above fold), @cl-4 (CTA to #contact)
+import logoSrc from "../assets/god-object-logo.png";
+---
+
+<!--
+  min-h-svh: full viewport height.
+  flex col centered: logo → name → headline → sub → CTA stacked.
+  @co-1 — visitor understands God Object without scrolling.
+-->
+<section
+  class="relative min-h-svh flex flex-col items-center justify-center px-6 py-24 text-center"
+  aria-label="Hero"
+>
+  <!--
+    Logo — God Object monolith mark.
+    Max width constrained so it dominates without overflowing on mobile (@co-4).
+  -->
+  <img
+    src={logoSrc.src}
+    alt="God Object logo — a towering cube over tiny human figures"
+    class="mb-10 w-full max-w-[220px] select-none"
+    draggable="false"
+  />
+
+  <!--
+    Company name — monospace, wide tracking, all-caps.
+    The typographic treatment mirrors the precision implied by "God Object".
+    @co-1
+  -->
+  <p class="font-mono text-sm tracking-[0.35em] text-go-accent mb-6">
+    GOD OBJECT
+  </p>
+
+  <!--
+    Headline — "Omniscient by design."
+    Reclaims the God Object anti-pattern as a virtue: the class that knows
+    everything, the company that owns the whole problem.
+    @co-1, @co-2
+  -->
+  <h1 class="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight mb-6 max-w-2xl">
+    Omniscient by design.
+  </h1>
+
+  <!--
+    Subheading — makes the irony land without explaining the joke.
+    Describes God Object behaviour (does everything, delegates nothing)
+    as a client promise.
+    @co-1, @co-2
+  -->
+  <p class="text-base sm:text-lg text-go-accent/80 max-w-xl leading-relaxed mb-12">
+    We take the whole problem. Architecture, implementation,
+    deployment&nbsp;— nothing delegated, nothing abstracted away.
+  </p>
+
+  <!--
+    Primary CTA — smooth scrolls to the contact section.
+    Outlined style: technical restraint over conventional filled button.
+    @cl-4 — CTA reachable from hero
+  -->
+  <a
+    href="#contact"
+    class="inline-block border border-go-white/40 hover:border-go-white text-go-white
+           px-8 py-3 font-mono text-sm tracking-widest uppercase
+           transition-colors duration-200"
+  >
+    Get in touch
+  </a>
+
+  <!--
+    Scroll indicator — subtle nudge to explore beyond the fold.
+    Hidden on very short viewports where it would overlap content.
+    @co-1
+  -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 opacity-30">
+    <span class="font-mono text-xs tracking-widest uppercase">Scroll</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none" aria-hidden="true">
+      <rect x="6" y="0" width="4" height="4" fill="currentColor" opacity="0.5"/>
+      <rect x="6" y="6" width="4" height="4" fill="currentColor" opacity="0.7"/>
+      <rect x="6" y="12" width="4" height="4" fill="currentColor"/>
+    </svg>
+  </div>
+</section>
