@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# tests/test-layout-consistency — all content sections use the same
+# horizontal margin pattern: section > div.max-w-6xl.mx-auto
+# Satisfies: @co-1 (competent, consistent presentation), @co-4 (mobile)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+COMPONENTS="$ROOT/src/components"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Layout consistency tests ==="
+
+# Canonical pattern: section element must NOT carry max-w-* directly.
+# Content width is controlled by an inner div.max-w-6xl.mx-auto.
+# This ensures all sections share the same left/right gutters.
+
+for component in Services.astro Contact.astro; do
+  file="$COMPONENTS/$component"
+
+  # Section tag should not have max-w on it.
+  # Extract the opening <section ...> tag and check for max-w- within it.
+  if grep -o '<section[^>]*>' "$file" 2>/dev/null | grep -q 'max-w-'; then
+    fail "$component: <section> carries max-w (should be on inner wrapper div)"
+  else
+    pass "$component: <section> does not carry max-w"
+  fi
+
+  # Must have an inner div with max-w-6xl mx-auto
+  if grep -q 'max-w-6xl.*mx-auto\|mx-auto.*max-w-6xl' "$file" 2>/dev/null; then
+    pass "$component: has inner max-w-6xl mx-auto wrapper"
+  else
+    fail "$component: missing inner max-w-6xl mx-auto wrapper"
+  fi
+done
+
+# Emello and Footer already use the correct pattern — verify they still do
+for component in Emello.astro Footer.astro; do
+  file="$COMPONENTS/$component"
+  if grep -q 'max-w-6xl.*mx-auto\|mx-auto.*max-w-6xl' "$file" 2>/dev/null; then
+    pass "$component: has max-w-6xl mx-auto wrapper"
+  else
+    fail "$component: missing max-w-6xl mx-auto wrapper"
+  fi
+done
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

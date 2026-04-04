@@ -18,8 +18,15 @@ echo "=== Footer structural tests ==="
 
 grep -q 'God Object\|GOD OBJECT' "$FOOTER" && pass "Footer contains company name" || fail "Footer missing company name"
 grep -q '©\|&copy;\|copyright'   "$FOOTER" && pass "Footer contains copyright"    || fail "Footer missing copyright"
-grep -q 'github\|GitHub'         "$FOOTER" && pass "Footer has GitHub link"        || fail "Footer missing GitHub link"
+grep -q 'GitHub'                 "$FOOTER" && pass "Footer has GitHub link (title-case)" || fail "Footer missing title-case GitHub link"
 grep -q 'hello@\|mailto:'        "$FOOTER" && pass "Footer has contact email"      || fail "Footer missing contact email"
+
+# Domain must be godobject.com — @co-1
+grep -q 'godobject\.com'         "$FOOTER" && pass "Footer uses correct domain (godobject.com)" || fail "Footer has wrong domain"
+
+# GitHub link must NOT use uppercase class — @co-1
+grep -q 'GitHub' "$FOOTER" && ! grep -q '"[^"]*GitHub[^"]*uppercase[^"]*"\|uppercase[^"]*GitHub' "$FOOTER" \
+  && pass "GitHub link is not forced uppercase" || fail "GitHub link may be forced uppercase"
 
 grep -q 'Footer' "$ROOT/src/pages/index.astro" \
   && pass "index.astro includes Footer" || fail "index.astro missing Footer"
