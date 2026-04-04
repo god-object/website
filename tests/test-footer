@@ -18,6 +18,7 @@ echo "=== Footer structural tests ==="
 
 grep -q 'God Object\|GOD OBJECT' "$FOOTER" && pass "Footer contains company name" || fail "Footer missing company name"
 grep -q '©\|&copy;\|copyright'   "$FOOTER" && pass "Footer contains copyright"    || fail "Footer missing copyright"
+grep -q 'github\.com/god-object' "$FOOTER" && pass "Footer GitHub URL is correct"        || fail "Footer GitHub URL is wrong"
 grep -q 'GitHub'                 "$FOOTER" && pass "Footer has GitHub link (title-case)" || fail "Footer missing title-case GitHub link"
 grep -q 'hello@\|mailto:'        "$FOOTER" && pass "Footer has contact email"      || fail "Footer missing contact email"
 
