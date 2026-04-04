@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" fill="none" aria-label="God Object">
+  <!--
+    God Object logo — monolith cube with negative-space human figures.
+    @co-1 — logo mark visible in hero and nav.
+
+    Cube geometry (isometric, tall/monolith proportions):
+      Apex         (100,  22)
+      Right-top    (158,  54)
+      Left-top     ( 42,  54)
+      Center       (100,  86)  ← where three face edges meet
+      Right-bottom (158, 210)
+      Left-bottom  ( 42, 210)
+      Bottom-point (100, 242)
+
+    Three faces, same currentColor at different opacities for depth.
+    Figures are punched out of the left face as negative space via <mask>.
+    currentColor means the mark adapts to any background by inheriting
+    the CSS color property — no hard-coded colours.
+  -->
+  <defs>
+    <!--
+      Figure cutouts — 5 human silhouettes (head circle + body rect)
+      standing at the base of the left face.
+      @co-1 — tiny figures convey the "awesome monolith" scale.
+
+      Figure base y for each x follows the bottom edge of the left face:
+        y_base(x) = 210 + (x − 42) / 58 × 32
+      Figure height: 17px (head r=3.5, gap 1px, body 10px tall)
+    -->
+    <mask id="figure-cutouts">
+      <rect width="200" height="260" fill="white"/>
+
+      <!-- Figure 1  x=55  y_base≈217 -->
+      <circle cx="55"  cy="203.7" r="3.5" fill="black"/>
+      <rect   x="52"   y="207.7"  width="6" height="9" fill="black"/>
+
+      <!-- Figure 2  x=63  y_base≈222 -->
+      <circle cx="63"  cy="208.1" r="3.5" fill="black"/>
+      <rect   x="60"   y="212.1"  width="6" height="9" fill="black"/>
+
+      <!-- Figure 3  x=71  y_base≈226 -->
+      <circle cx="71"  cy="212.5" r="3.5" fill="black"/>
+      <rect   x="68"   y="216.5"  width="6" height="9" fill="black"/>
+
+      <!-- Figure 4  x=79  y_base≈230 -->
+      <circle cx="79"  cy="216.9" r="3.5" fill="black"/>
+      <rect   x="76"   y="220.9"  width="6" height="9" fill="black"/>
+
+      <!-- Figure 5  x=87  y_base≈235 -->
+      <circle cx="87"  cy="221.3" r="3.5" fill="black"/>
+      <rect   x="84"   y="225.3"  width="6" height="9" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Top face — lightest, suggests illuminated horizontal surface -->
+  <polygon
+    points="100,22 158,54 100,86 42,54"
+    fill="currentColor"
+    opacity="0.50"/>
+
+  <!-- Right face — mid tone, partially lit -->
+  <polygon
+    points="100,86 158,54 158,210 100,242"
+    fill="currentColor"
+    opacity="0.70"/>
+
+  <!-- Left face — full opacity, figures cut through as negative space -->
+  <path
+    d="M42,54 L100,86 L100,242 L42,210 Z"
+    fill="currentColor"
+    mask="url(#figure-cutouts)"/>
+</svg>

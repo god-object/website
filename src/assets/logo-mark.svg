@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" fill="none" aria-label="God Object">
+  <!--
+    God Object logo mark — cube only, no figures.
+    @co-4 — used at small sizes where the figure silhouettes would be
+    unreadable (nav icon, app icon, social avatar). Same cube geometry
+    and currentColor approach as logo.svg.
+  -->
+
+  <!-- Top face -->
+  <polygon
+    points="100,22 158,54 100,86 42,54"
+    fill="currentColor"
+    opacity="0.50"/>
+
+  <!-- Right face -->
+  <polygon
+    points="100,86 158,54 158,210 100,242"
+    fill="currentColor"
+    opacity="0.70"/>
+
+  <!-- Left face — full opacity, clean (no cutouts at this scale) -->
+  <path
+    d="M42,54 L100,86 L100,242 L42,210 Z"
+    fill="currentColor"/>
+</svg>

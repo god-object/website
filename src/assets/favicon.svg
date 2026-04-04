@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" aria-label="God Object">
+  <!--
+    God Object favicon — astrological sun symbol ⊙ (circle with central dot).
+    References "sun-god" — a pun on the company name — and scales cleanly
+    to 16×16, 32×32, and 64×64 without any detail loss.
+    @co-1 — brand identity present at all touchpoints including browser tab.
+  -->
+
+  <!-- Outer circle of the sun symbol -->
+  <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="2" fill="none"/>
+
+  <!-- Central dot -->
+  <circle cx="16" cy="16" r="3" fill="currentColor"/>
+</svg>

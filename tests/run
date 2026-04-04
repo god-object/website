@@ -17,7 +17,8 @@ run_suite() {
   fi
 }
 
-run_suite "scaffold"  "$ROOT/tests/test-scaffold"
+run_suite "scaffold"      "$ROOT/tests/test-scaffold"
+run_suite "brand-assets" "$ROOT/tests/test-brand-assets"
 
 echo ""
 echo "=== Test run complete: $PASS suite(s) passed, $FAIL suite(s) failed ==="

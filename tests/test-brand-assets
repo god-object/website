@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# tests/test-brand-assets — structural validator for SVG logo assets
+# Satisfies: @co-1 (logo visible on homepage)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ASSETS="$ROOT/src/assets"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Brand asset structural tests ==="
+
+for asset in logo.svg logo-mark.svg favicon.svg; do
+  [[ -f "$ASSETS/$asset" ]] \
+    && pass "$asset exists" \
+    || fail "$asset missing"
+done
+
+# All logo SVGs must use currentColor so they adapt to any background
+for asset in logo.svg logo-mark.svg; do
+  grep -q 'currentColor' "$ASSETS/$asset" 2>/dev/null \
+    && pass "$asset uses currentColor" \
+    || fail "$asset does not use currentColor"
+
+  grep -q 'viewBox' "$ASSETS/$asset" 2>/dev/null \
+    && pass "$asset has viewBox" \
+    || fail "$asset missing viewBox"
+done
+
+# Main logo must contain a mask (negative-space figures)
+grep -q '<mask' "$ASSETS/logo.svg" 2>/dev/null \
+  && pass "logo.svg contains figure mask" \
+  || fail "logo.svg missing figure mask"
+
+# Favicon must reference the sun symbol (circle with inner dot)
+# verified by presence of two circle elements
+circles=$(grep -c '<circle' "$ASSETS/favicon.svg" 2>/dev/null || echo 0)
+[[ "$circles" -ge 2 ]] \
+  && pass "favicon.svg has sun symbol (≥2 circles)" \
+  || fail "favicon.svg missing sun symbol circles (found $circles)"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]
