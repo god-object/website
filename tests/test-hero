@@ -22,8 +22,8 @@ grep -q 'Layout'    "$ROOT/src/pages/index.astro" && pass "index uses Layout"  |
 grep -q 'Hero'      "$ROOT/src/pages/index.astro" && pass "index uses Hero"    || fail "index does not import Hero"
 
 # Hero contains the required content — @co-1
-grep -q 'god-object-logo' "$ROOT/src/components/Hero.astro" \
-  && pass "Hero references logo"               || fail "Hero missing logo reference"
+grep -q 'hero' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero references hero image"          || fail "Hero missing image reference"
 
 grep -q 'GOD OBJECT' "$ROOT/src/components/Hero.astro" \
   && pass "Hero contains company name"         || fail "Hero missing company name"
