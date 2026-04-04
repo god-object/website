@@ -8,8 +8,12 @@ import heroSrc from "../assets/hero.png";
   Hero image fills the viewport; text content overlaid on top.
   @co-1 — headline visible above the fold.
 -->
-<!-- @co-4 — 50svh on mobile keeps the image from dominating small screens -->
-<section class="relative min-h-[65svh] sm:min-h-svh flex flex-col items-center justify-center text-center" aria-label="Hero">
+<!--
+  h-[65svh] on mobile, full viewport on sm+.
+  Section height is driven by py on the text wrapper, so we use a fixed height
+  with overflow-hidden to actually constrain it on small screens. @co-4
+-->
+<section class="relative h-[65svh] sm:min-h-svh flex flex-col items-center justify-center text-center overflow-hidden" aria-label="Hero">
 
   <!--
     Hero image — absolute fill behind all content.
@@ -26,7 +30,8 @@ import heroSrc from "../assets/hero.png";
   <div class="absolute inset-0 bg-go-black/50"></div>
 
   <!-- Text content — sits above image and scrim via z-10 -->
-  <div class="relative z-10 flex flex-col items-center px-6 py-24">
+  <!-- py-10 on mobile, py-24 on sm+ — @co-4 -->
+  <div class="relative z-10 flex flex-col items-center px-6 py-10 sm:py-24">
 
   <!--
     Headline — "Omniscient by design."
