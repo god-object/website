@@ -1,0 +1,66 @@
+---
+// Services section — three capability cards conveying technical depth.
+// Satisfies: @co-2 (deep expertise, not generic agency copy)
+
+const services = [
+  {
+    title: "Bespoke applications",
+    body: `We build software to an exact specification — web, mobile, or desktop.
+           No templates, no off-the-shelf compromises. If the problem is
+           unusual, that is not a reason to reach for something generic.`,
+    detail: "Full-stack · API design · Data modelling · Delivery",
+  },
+  {
+    title: "AI integration",
+    body: `LLM pipelines, autonomous agents, local inference, retrieval systems.
+           We understand the engineering beneath the surface — context windows,
+           tool use, latency trade-offs — and build accordingly.`,
+    detail: "Claude · Local models · RAG · Agents · Privacy-preserving infra",
+  },
+  {
+    title: "Systems design",
+    body: `Architecture that holds under pressure. We engage at the level of
+           data flow, failure modes, and long-term maintainability — not just
+           the feature in front of us.`,
+    detail: "Distributed systems · Performance · Observability · Scaling",
+  },
+];
+---
+
+<!--
+  id="work" — nav anchor target.
+  @co-2 — conveys technical expertise through specificity, not superlatives.
+-->
+<section id="work" class="px-6 py-32 max-w-6xl mx-auto">
+
+  <p class="font-mono text-xs tracking-[0.3em] uppercase text-go-accent/50 mb-4">
+    What we do
+  </p>
+  <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight mb-20 max-w-xl">
+    Hard problems.<br />Harder solutions.
+  </h2>
+
+  <!--
+    Three capability cards — @co-2.
+    Border-top rule gives each card a defined entry without boxing it in.
+    Detail line uses mono to signal technical specificity.
+  -->
+  <ul class="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-px" role="list">
+    {services.map((svc) => (
+      <li class="border-t border-white/10 pt-8 pb-4 md:pr-10">
+        <h3 class="text-lg font-semibold mb-4">{svc.title}</h3>
+        <p class="text-go-accent/70 leading-relaxed text-sm mb-6">{svc.body}</p>
+        <p class="font-mono text-xs text-go-accent/40 leading-relaxed">{svc.detail}</p>
+      </li>
+    ))}
+  </ul>
+
+  <!--
+    Closing statement — reinforces the "whole problem" promise from the hero.
+    @co-2
+  -->
+  <p class="mt-20 text-go-accent/50 text-sm max-w-lg leading-relaxed border-t border-white/5 pt-8">
+    We work with a small number of clients at a time. If your problem is
+    interesting and the constraint is real, we want to hear about it.
+  </p>
+</section>

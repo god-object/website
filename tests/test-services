@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# tests/test-services — structural validator for the services section
+# Satisfies: @co-2 (technical capability, not generic agency copy)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SVC="$ROOT/src/components/Services.astro"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Services structural tests ==="
+
+[[ -f "$SVC" ]] && pass "Services.astro exists" || fail "Services.astro missing"
+
+grep -q 'id="work"'     "$SVC" && pass "Section has id=work"            || fail "Section missing id=work"
+grep -q 'Bespoke'       "$SVC" && pass "Bespoke apps capability present" || fail "Bespoke apps capability missing"
+grep -q 'AI'            "$SVC" && pass "AI integration capability present"|| fail "AI integration capability missing"
+grep -q '[Ss]ystems'    "$SVC" && pass "Systems design capability present"|| fail "Systems design capability missing"
+
+grep -q 'Services\|Work' "$ROOT/src/pages/index.astro" \
+  && pass "index.astro includes Services"  || fail "index.astro missing Services"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]
