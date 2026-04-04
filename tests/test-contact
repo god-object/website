@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# tests/test-contact — structural validator for the contact section
+# Satisfies: @cl-1 (submit enquiry), @cl-2 (required field validation),
+#            @cl-3 (email validation), @cl-4 (CTA from hero links here)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CT="$ROOT/src/components/Contact.astro"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Contact structural tests ==="
+
+[[ -f "$CT" ]] && pass "Contact.astro exists" || fail "Contact.astro missing"
+
+# Section anchor — @cl-4
+grep -q 'id="contact"'     "$CT" && pass "Section has id=contact"      || fail "Section missing id=contact"
+
+# Form fields — @cl-1
+grep -q 'name="name"'      "$CT" && pass "Name field present"           || fail "Name field missing"
+grep -q 'type="email"'     "$CT" && pass "Email field present"          || fail "Email field missing"
+grep -q 'name="message"\|textarea' "$CT" && pass "Message field present" || fail "Message field missing"
+
+# Netlify Forms — @cl-1
+grep -q 'data-netlify\|netlify-forms\|netlify' "$CT" \
+  && pass "Netlify Forms wired up" || fail "Netlify Forms not wired up"
+
+# Validation — @cl-2, @cl-3
+grep -q 'required'         "$CT" && pass "Required fields marked"       || fail "required attribute missing"
+grep -q 'novalidate\|error\|invalid' "$CT" \
+  && pass "Validation handling present" || fail "Validation handling missing"
+
+# Success state — @cl-1
+grep -q 'success\|received\|thank\|sent' "$CT" \
+  && pass "Success state present" || fail "Success state missing"
+
+grep -q 'Contact' "$ROOT/src/pages/index.astro" \
+  && pass "index.astro includes Contact" || fail "index.astro missing Contact"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

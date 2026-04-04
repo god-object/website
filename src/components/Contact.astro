@@ -1,0 +1,195 @@
+---
+// Contact section — client enquiry form wired to Netlify Forms.
+// Satisfies: @cl-1 (submit enquiry + notification), @cl-2 (required field validation),
+//            @cl-3 (email validation), @cl-4 (anchor target from hero CTA)
+---
+
+<!--
+  id="contact" — target for the hero CTA and nav link. @cl-4
+-->
+<section id="contact" class="px-6 py-32 max-w-6xl mx-auto">
+
+  <p class="font-mono text-xs tracking-[0.3em] uppercase text-go-accent/50 mb-4">
+    Get in touch
+  </p>
+  <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight mb-4 max-w-lg">
+    Tell us what you're building.
+  </h2>
+  <p class="text-go-accent/60 text-sm leading-relaxed mb-16 max-w-md">
+    We work with a small number of clients at a time. If your problem is
+    interesting, we want to hear about it.
+  </p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+
+    <!--
+      Contact form — Netlify Forms handles submission and sends email
+      notification to the God Object inbox. ADR-002.
+      @cl-1
+    -->
+    <form
+      id="contact-form"
+      name="contact"
+      method="POST"
+      data-netlify="true"
+      netlify-honeypot="bot-field"
+      class="space-y-6"
+      novalidate
+    >
+      <input type="hidden" name="form-name" value="contact" />
+      <p class="hidden"><input name="bot-field" /></p>
+
+      <!-- Name — @cl-2 -->
+      <div>
+        <label for="contact-name" class="block font-mono text-xs tracking-widest uppercase text-go-accent/50 mb-2">
+          Name <span aria-hidden="true">*</span>
+        </label>
+        <input
+          id="contact-name"
+          name="name"
+          type="text"
+          required
+          autocomplete="name"
+          placeholder="Your name"
+          class="w-full bg-transparent border border-white/20 focus:border-white/60
+                 outline-none px-4 py-3 text-sm text-go-white placeholder:text-go-accent/30
+                 transition-colors"
+        />
+        <p id="name-error" class="mt-2 text-xs text-red-400 hidden" role="alert">
+          Please enter your name.
+        </p>
+      </div>
+
+      <!-- Email — @cl-3 -->
+      <div>
+        <label for="contact-email" class="block font-mono text-xs tracking-widest uppercase text-go-accent/50 mb-2">
+          Email <span aria-hidden="true">*</span>
+        </label>
+        <input
+          id="contact-email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          placeholder="you@example.com"
+          class="w-full bg-transparent border border-white/20 focus:border-white/60
+                 outline-none px-4 py-3 text-sm text-go-white placeholder:text-go-accent/30
+                 transition-colors"
+        />
+        <p id="email-error" class="mt-2 text-xs text-red-400 hidden" role="alert">
+          Please enter a valid email address.
+        </p>
+      </div>
+
+      <!-- Message — @cl-2 -->
+      <div>
+        <label for="contact-message" class="block font-mono text-xs tracking-widest uppercase text-go-accent/50 mb-2">
+          Message <span aria-hidden="true">*</span>
+        </label>
+        <textarea
+          id="contact-message"
+          name="message"
+          required
+          rows="6"
+          placeholder="Describe your project — what you're building, what the constraint is, what you've tried."
+          class="w-full bg-transparent border border-white/20 focus:border-white/60
+                 outline-none px-4 py-3 text-sm text-go-white placeholder:text-go-accent/30
+                 transition-colors resize-y"
+        ></textarea>
+        <p id="message-error" class="mt-2 text-xs text-red-400 hidden" role="alert">
+          Please describe your project.
+        </p>
+      </div>
+
+      <!-- Success message — @cl-1 -->
+      <p id="contact-success" class="text-sm text-go-accent/80 hidden py-2" role="status">
+        Message received. We'll be in touch.
+      </p>
+
+      <!-- General error — @cl-1 -->
+      <p id="contact-error" class="text-sm text-red-400 hidden py-2" role="alert">
+        Something went wrong. Please try again or email us directly.
+      </p>
+
+      <button
+        type="submit"
+        class="border border-white/30 hover:border-white text-go-white
+               font-mono text-xs tracking-widest uppercase px-8 py-3
+               transition-colors duration-200 hover:bg-white/5"
+      >
+        Send
+      </button>
+    </form>
+
+    <!-- Right column: quiet secondary info — @cl-4 -->
+    <div class="text-go-accent/40 text-sm space-y-8 font-mono lg:pt-2">
+      <div>
+        <p class="text-go-accent/60 mb-1 tracking-widest uppercase text-xs">Email</p>
+        <a href="mailto:hello@godobject.dev" class="hover:text-go-white transition-colors">
+          hello@godobject.dev
+        </a>
+      </div>
+      <div>
+        <p class="text-go-accent/60 mb-1 tracking-widest uppercase text-xs">Response time</p>
+        <p>Within two business days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Contact form — client-side validation. @cl-2, @cl-3
+  const form       = document.getElementById("contact-form")    as HTMLFormElement;
+  const nameEl     = document.getElementById("contact-name")    as HTMLInputElement;
+  const emailEl    = document.getElementById("contact-email")   as HTMLInputElement;
+  const messageEl  = document.getElementById("contact-message") as HTMLTextAreaElement;
+  const nameErr    = document.getElementById("name-error")      as HTMLElement;
+  const emailErr   = document.getElementById("email-error")     as HTMLElement;
+  const messageErr = document.getElementById("message-error")   as HTMLElement;
+  const successEl  = document.getElementById("contact-success") as HTMLElement;
+  const errorEl    = document.getElementById("contact-error")   as HTMLElement;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let valid = true;
+
+    // Reset error states
+    [nameErr, emailErr, messageErr, errorEl].forEach(el => el.classList.add("hidden"));
+
+    // @cl-2 — required field: name
+    if (!nameEl.value.trim()) {
+      nameErr.classList.remove("hidden");
+      valid = false;
+    }
+
+    // @cl-3 — email format validation
+    const email = emailEl.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailErr.classList.remove("hidden");
+      valid = false;
+    }
+
+    // @cl-2 — required field: message
+    if (!messageEl.value.trim()) {
+      messageErr.classList.remove("hidden");
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    // @cl-1 — submit to Netlify Forms
+    try {
+      const data = new FormData(form);
+      await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data as any).toString(),
+      });
+
+      form.classList.add("hidden");
+      successEl.classList.remove("hidden");
+    } catch {
+      errorEl.classList.remove("hidden");
+    }
+  });
+</script>
