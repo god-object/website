@@ -34,6 +34,9 @@ grep -q 'required'         "$CT" && pass "Required fields marked"       || fail 
 grep -q 'novalidate\|error\|invalid' "$CT" \
   && pass "Validation handling present" || fail "Validation handling missing"
 
+# Correct contact email — @cl-1
+grep -q 'godobject\.com' "$CT" && pass "Contact email uses correct domain" || fail "Contact email has wrong domain"
+
 # Success state — @cl-1
 grep -q 'success\|received\|thank\|sent' "$CT" \
   && pass "Success state present" || fail "Success state missing"
