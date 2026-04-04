@@ -5,24 +5,27 @@ import heroSrc from "../assets/hero.png";
 ---
 
 <!--
-  Full-bleed hero image above centred text content.
-  @co-1 — visitor understands God Object without scrolling.
+  Hero image fills the viewport; text content overlaid on top.
+  @co-1 — headline visible above the fold.
 -->
-<section class="relative min-h-svh flex flex-col text-center" aria-label="Hero">
+<section class="relative min-h-svh flex flex-col items-center justify-center text-center" aria-label="Hero">
 
   <!--
-    Hero image — full viewport width, no side padding.
-    @co-1, @co-4
+    Hero image — absolute fill behind all content.
+    object-cover ensures it fills without distortion at any viewport size. @co-4
   -->
   <img
     src={heroSrc.src}
     alt="God Object — a towering cube over tiny human figures"
-    class="w-full select-none"
+    class="absolute inset-0 w-full h-full object-cover select-none"
     draggable="false"
   />
 
-  <!-- Text content — centred below the image -->
-  <div class="flex flex-col items-center justify-center px-6 py-20 flex-1">
+  <!-- Scrim — improves text legibility over the image. @co-1 -->
+  <div class="absolute inset-0 bg-go-black/50"></div>
+
+  <!-- Text content — sits above image and scrim via z-10 -->
+  <div class="relative z-10 flex flex-col items-center px-6 py-24">
 
   <!--
     Company name — monospace, wide tracking, all-caps.
@@ -73,7 +76,13 @@ import heroSrc from "../assets/hero.png";
     Hidden on very short viewports where it would overlap content.
     @co-1
   -->
-  <div class="mt-8 flex flex-col items-center gap-2 opacity-30">
+  </div><!-- end text content -->
+
+  <!--
+    Scroll indicator — absolute to section bottom so it doesn't affect text layout.
+    @co-1
+  -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 hidden sm:flex flex-col items-center gap-2 opacity-30">
     <span class="font-mono text-xs tracking-widest uppercase">Scroll</span>
     <svg width="16" height="24" viewBox="0 0 16 24" fill="none" aria-hidden="true">
       <rect x="6" y="0" width="4" height="4" fill="currentColor" opacity="0.5"/>
@@ -81,6 +90,4 @@ import heroSrc from "../assets/hero.png";
       <rect x="6" y="12" width="4" height="4" fill="currentColor"/>
     </svg>
   </div>
-
-  </div><!-- end text content -->
 </section>
