@@ -1,0 +1,11 @@
+# Netlify deploy config — ADR-003 (Netlify hosting)
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Deploy previews for every PR — @co-5 (performance review before merge)
+[context.deploy-preview]
+  command = "npm run build"

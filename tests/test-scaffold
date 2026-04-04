@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# tests/test-scaffold — structural validator for the Astro + Tailwind project scaffold
+# Satisfies: @co-1 (site exists and renders), @co-4 (mobile), @co-5 (performance config)
+#
+# What counts as a test here: file/config existence checks per Phase 4 rules
+# for non-code products. These catch a missing scaffold before any browser test runs.
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Scaffold structural tests ==="
+
+# --- Astro project ---
+[[ -f "$ROOT/package.json" ]]                          && pass "package.json exists"         || fail "package.json missing"
+grep -q '"astro"' "$ROOT/package.json" 2>/dev/null     && pass "astro dependency declared"   || fail "astro not in package.json"
+[[ -f "$ROOT/astro.config.mjs" ]]                      && pass "astro.config.mjs exists"     || fail "astro.config.mjs missing"
+
+# --- Tailwind ---
+[[ -f "$ROOT/tailwind.config.mjs" ]]                   && pass "tailwind.config.mjs exists"  || fail "tailwind.config.mjs missing"
+grep -q '"@astrojs/tailwind"\|"tailwindcss"' "$ROOT/package.json" 2>/dev/null \
+                                                       && pass "tailwind dependency declared" || fail "tailwind not in package.json"
+
+# --- Source structure ---
+[[ -d "$ROOT/src/pages" ]]                             && pass "src/pages/ exists"            || fail "src/pages/ missing"
+[[ -d "$ROOT/src/layouts" ]]                           && pass "src/layouts/ exists"           || fail "src/layouts/ missing"
+[[ -d "$ROOT/src/components" ]]                        && pass "src/components/ exists"        || fail "src/components/ missing"
+[[ -f "$ROOT/src/pages/index.astro" ]]                 && pass "index.astro exists"            || fail "index.astro missing"
+
+# --- Netlify ---
+[[ -f "$ROOT/netlify.toml" ]]                          && pass "netlify.toml exists"           || fail "netlify.toml missing"
+grep -q '\[build\]' "$ROOT/netlify.toml" 2>/dev/null   && pass "netlify.toml has [build]"      || fail "netlify.toml missing [build] section"
+
+# --- Misc ---
+[[ -f "$ROOT/.gitignore" ]]                            && pass ".gitignore exists"             || fail ".gitignore missing"
+grep -q 'dist' "$ROOT/.gitignore" 2>/dev/null          && pass ".gitignore excludes dist/"     || fail ".gitignore doesn't exclude dist/"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]
