@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# tests/test-emello — structural validator for the Emello section and waitlist
+# Satisfies: @em-1 (value prop), @em-2 (signup), @em-3 (validation), @em-4 (duplicate guard)
+# Also satisfies: @co-3 (Emello as proof of God Object capability)
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+EM="$ROOT/src/components/Emello.astro"
+
+pass() { echo "  PASS: $1"; ((PASS++)) || true; }
+fail() { echo "  FAIL: $1"; ((FAIL++)) || true; }
+
+echo "=== Emello structural tests ==="
+
+[[ -f "$EM" ]] && pass "Emello.astro exists" || fail "Emello.astro missing"
+
+# Value proposition — @em-1, @co-3
+grep -q 'id="emello"'       "$EM" && pass "Section has id=emello"               || fail "Section missing id=emello"
+grep -q 'Emello'            "$EM" && pass "Emello name present"                  || fail "Emello name missing"
+grep -q -i 'self.host\|your.hardware\|on.your\|own.hardware' "$EM" \
+  && pass "Self-hosted messaging present"   || fail "Self-hosted messaging missing"
+grep -q -i 'privac'         "$EM" && pass "Privacy messaging present"            || fail "Privacy messaging missing"
+grep -q -i 'coming soon\|waitlist\|notify' "$EM" \
+  && pass "Coming-soon framing present"     || fail "Coming-soon framing missing"
+
+# Waitlist form — @em-2
+grep -q '<form'             "$EM" && pass "Waitlist form present"                || fail "Waitlist form missing"
+grep -q 'type="email"'      "$EM" && pass "Email input present"                  || fail "Email input missing"
+grep -q 'netlify\|data-netlify\|netlify-forms' "$EM" \
+  && pass "Netlify Forms wired up"          || fail "Netlify Forms not wired up"
+
+# Client-side validation — @em-3
+grep -q 'required\|novalidate' "$EM" && pass "Form validation present"          || fail "Form validation missing"
+
+# Duplicate guard — @em-4
+grep -q 'localStorage\|already\|duplicate' "$EM" \
+  && pass "Duplicate guard present"         || fail "Duplicate guard missing"
+
+grep -q 'Emello' "$ROOT/src/pages/index.astro" \
+  && pass "index.astro includes Emello"     || fail "index.astro missing Emello"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]]

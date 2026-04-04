@@ -1,0 +1,191 @@
+---
+// Emello section — product announcement, value proposition, waitlist signup.
+// Satisfies: @co-3 (Emello as proof of God Object capability)
+//            @em-1 (self-hosted, AI-native, privacy-first, coming soon)
+//            @em-2 (waitlist form + Netlify Forms)
+//            @em-3 (client-side email validation)
+//            @em-4 (localStorage duplicate guard)
+---
+
+<!--
+  id="emello" — nav anchor target.
+  Inset background distinguishes the product showcase from the services section.
+  @co-3
+-->
+<section id="emello" class="px-6 py-32 bg-white/[0.02] border-y border-white/5">
+  <div class="max-w-6xl mx-auto">
+
+    <p class="font-mono text-xs tracking-[0.3em] uppercase text-go-accent/50 mb-4">
+      Our work, in the wild.
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+
+      <!-- Left: value proposition — @em-1, @co-3 -->
+      <div>
+        <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight mb-6">
+          Emello
+        </h2>
+
+        <!--
+          Description communicates: AI-native, self-hosted on your own hardware,
+          privacy-preserving, topic-grouped inbox. @em-1
+        -->
+        <p class="text-go-accent/70 leading-relaxed mb-6">
+          An AI-native email client that runs on your own hardware.
+          It groups related messages from different senders into real-world
+          topics — your upcoming trip, an outstanding invoice, a school event —
+          so you always know what is happening and what needs action.
+        </p>
+
+        <p class="text-go-accent/70 leading-relaxed mb-8">
+          Unlike Gmail or Outlook, your email stays encrypted at rest on
+          hardware you control. Emello connects directly to AI assistants like
+          Claude so they can read, summarise, and act on your inbox without
+          routing your data through a third party. Privacy-first, by design.
+        </p>
+
+        <!--
+          Technical proof point — positions Emello as evidence of God Object's
+          AI and systems engineering depth. @co-3
+        -->
+        <ul class="space-y-2 font-mono text-xs text-go-accent/40">
+          <li>— Self-hosted · runs on your own hardware</li>
+          <li>— End-to-end encryption at rest</li>
+          <li>— Direct Claude / local model integration</li>
+          <li>— No third-party data routing</li>
+        </ul>
+      </div>
+
+      <!-- Right: waitlist form — @em-2, @em-3, @em-4 -->
+      <div class="border border-white/10 p-8">
+
+        <p class="font-mono text-xs tracking-widest uppercase text-go-accent/50 mb-6">
+          Coming soon
+        </p>
+
+        <h3 class="text-xl font-semibold mb-3">Join the waitlist</h3>
+        <p class="text-go-accent/60 text-sm leading-relaxed mb-8">
+          Emello is not yet available. Leave your email and we will notify
+          you when early access opens.
+        </p>
+
+        <!--
+          Netlify Forms integration — data-netlify="true" enables form
+          capture at the CDN edge. ADR-002.
+          @em-2
+        -->
+        <form
+          id="emello-waitlist-form"
+          name="emello-waitlist"
+          method="POST"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+          class="space-y-4"
+          novalidate
+        >
+          <!-- Netlify honeypot — bot spam filter -->
+          <input type="hidden" name="form-name" value="emello-waitlist" />
+          <p class="hidden"><input name="bot-field" /></p>
+
+          <div>
+            <label for="waitlist-email" class="block font-mono text-xs tracking-widest uppercase text-go-accent/50 mb-2">
+              Email address
+            </label>
+            <input
+              id="waitlist-email"
+              name="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              class="w-full bg-transparent border border-white/20 focus:border-white/60
+                     outline-none px-4 py-3 text-sm text-go-white placeholder:text-go-accent/30
+                     transition-colors font-mono"
+              autocomplete="email"
+            />
+            <!-- Inline validation error — @em-3 -->
+            <p id="waitlist-email-error" class="mt-2 text-xs text-red-400 hidden" role="alert">
+              Please enter a valid email address.
+            </p>
+          </div>
+
+          <!-- Success state — @em-2 -->
+          <p id="waitlist-success" class="text-sm text-go-accent/80 hidden py-2" role="status">
+            You're on the list. We'll be in touch.
+          </p>
+
+          <!-- Already-registered state — @em-4 -->
+          <p id="waitlist-duplicate" class="text-sm text-go-accent/60 hidden py-2" role="status">
+            You're already on the waitlist.
+          </p>
+
+          <button
+            type="submit"
+            class="w-full border border-white/30 hover:border-white text-go-white
+                   font-mono text-xs tracking-widest uppercase px-6 py-3
+                   transition-colors duration-200 hover:bg-white/5"
+          >
+            Notify me
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Waitlist form — client-side validation (@em-3) and duplicate guard (@em-4).
+  const form      = document.getElementById("emello-waitlist-form") as HTMLFormElement;
+  const emailEl   = document.getElementById("waitlist-email")       as HTMLInputElement;
+  const errorEl   = document.getElementById("waitlist-email-error") as HTMLElement;
+  const successEl = document.getElementById("waitlist-success")     as HTMLElement;
+  const dupEl     = document.getElementById("waitlist-duplicate")   as HTMLElement;
+
+  const STORAGE_KEY = "emello-waitlist-email";
+
+  // @em-4 — on load, check if this browser already submitted
+  if (localStorage.getItem(STORAGE_KEY)) {
+    form.classList.add("hidden");
+    dupEl.classList.remove("hidden");
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.classList.add("hidden");
+
+    const email = emailEl.value.trim();
+
+    // @em-3 — validate email format before submitting
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errorEl.classList.remove("hidden");
+      emailEl.focus();
+      return;
+    }
+
+    // @em-4 — duplicate guard via localStorage
+    if (localStorage.getItem(STORAGE_KEY)) {
+      form.classList.add("hidden");
+      dupEl.classList.remove("hidden");
+      return;
+    }
+
+    // @em-2 — submit to Netlify Forms
+    try {
+      const data = new FormData(form);
+      await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data as any).toString(),
+      });
+
+      // Record submission locally to prevent duplicate — @em-4
+      localStorage.setItem(STORAGE_KEY, email);
+
+      form.classList.add("hidden");
+      successEl.classList.remove("hidden");
+    } catch {
+      errorEl.textContent = "Something went wrong. Please try again.";
+      errorEl.classList.remove("hidden");
+    }
+  });
+</script>
