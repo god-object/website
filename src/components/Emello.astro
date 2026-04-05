@@ -109,16 +109,6 @@
             </p>
           </div>
 
-          <!-- Success state — @em-2 -->
-          <p id="waitlist-success" class="text-sm text-go-accent/80 hidden py-2" role="status">
-            You're on the list. We'll be in touch.
-          </p>
-
-          <!-- Already-registered state — @em-4 -->
-          <p id="waitlist-duplicate" class="text-sm text-go-accent/60 hidden py-2" role="status">
-            You're already on the waitlist.
-          </p>
-
           <button
             type="submit"
             class="w-full border border-white/30 hover:border-white text-go-white
@@ -128,6 +118,17 @@
             Notify me
           </button>
         </form>
+
+        <!--
+          Success and duplicate messages live outside the form so they remain
+          visible when the form itself is hidden. @em-2, @em-4
+        -->
+        <p id="waitlist-success" class="text-sm text-go-accent/80 hidden py-2" role="status">
+          You're on the list. We'll be in touch.
+        </p>
+        <p id="waitlist-duplicate" class="text-sm text-go-accent/60 hidden py-2" role="status">
+          You're already on the waitlist.
+        </p>
       </div>
     </div>
   </div>

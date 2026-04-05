@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+# scripts/epic-summary — Epic Summary skeleton generator
+#
+# Purpose: Query Beads for closed tasks under an epic, cross-reference their
+# BDD scenario tags, and output a structured Epic Summary skeleton.
+# Deterministic sections (scenarios, tasks, ADR statuses) are extracted
+# mechanically; the agent fills in prose on top.
+# Satisfies: @demo-1
+#
+# Usage: scripts/epic-summary <epic-id>
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+def run_json(cmd):
+    """Run a command and parse its JSON output. Returns [] on failure."""
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return json.loads(result.stdout)
+    except Exception:
+        return []
+
+
+def get_scenario_name(tag, specs_dir):
+    """
+    Look up the scenario name for a given @tag across all .feature files.
+    Satisfies: ADR-004 — tags are file-scoped and unique within the project.
+    """
+    for feature_file in sorted(Path(specs_dir).glob("*.feature")):
+        lines = feature_file.read_text().splitlines()
+        for i, line in enumerate(lines):
+            if line.strip() == tag and i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                m = re.match(r"Scenario(?:\s+Outline)?:\s+(.+)", next_line)
+                if m:
+                    return m.group(1).strip()
+    return None
+
+
+def find_adrs_with_status(adr_dir, status):
+    """Return list of (path, title) for ADRs matching the given status."""
+    results = []
+    if not Path(adr_dir).exists():
+        return results
+    for f in sorted(Path(adr_dir).glob("ADR-*.md")):
+        text = f.read_text()
+        if f"**Status:** {status}" in text:
+            title_match = re.match(r"^# (.+)", text)
+            title = title_match.group(1) if title_match else f.name
+            results.append((str(f), title))
+    return results
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: scripts/epic-summary <epic-id>", file=sys.stderr)
+        sys.exit(1)
+
+    epic_id = sys.argv[1]
+
+    # -- Epic metadata --------------------------------------------------------
+    epic_data = run_json(["bd", "show", epic_id, "--json"])
+    epic_title = (
+        epic_data[0].get("title", "Unknown epic")
+        if isinstance(epic_data, list) and epic_data
+        else "Unknown epic"
+    )
+
+    # -- Tasks under this epic ------------------------------------------------
+    all_issues = run_json(["bd", "list", "--all", "--json"])
+    children = [i for i in all_issues if i.get("parent") == epic_id]
+    closed_tasks = [i for i in children if i.get("status") == "closed"]
+    open_tasks = [i for i in children if i.get("status") != "closed"]
+
+    # -- Extract and resolve scenario tags from closed task descriptions ------
+    tag_pattern = re.compile(r"@[a-z][a-z0-9_-]*-\d+")
+    seen_tags = set()
+    tag_details = []
+
+    for task in closed_tasks:
+        desc = task.get("description", "") or ""
+        for tag in tag_pattern.findall(desc):
+            if tag not in seen_tags:
+                seen_tags.add(tag)
+                name = get_scenario_name(tag, "specs/bdd")
+                tag_details.append((tag, name))
+
+    tag_details.sort(key=lambda x: x[0])
+
+    # -- ADR status sections --------------------------------------------------
+    # These are deterministic — do not fill in manually.
+    proposed_adrs = find_adrs_with_status("adrs", "Proposed")
+    deferred_adrs = find_adrs_with_status("adrs", "Deferred")
+
+    # -- Render skeleton ------------------------------------------------------
+    print(f"# Epic Summary: {epic_title} ({epic_id})")
+    print()
+    print("## What was built")
+    print("<!-- Describe what this epic delivered in 2-4 sentences. -->")
+    print()
+
+    print("## BDD scenarios satisfied")
+    if tag_details:
+        for tag, name in tag_details:
+            suffix = f": {name}" if name else ""
+            print(f"- {tag}{suffix}")
+    else:
+        print("- (no scenario tags found in closed task descriptions)")
+    print()
+
+    print("## Beads tasks closed")
+    if closed_tasks:
+        for t in closed_tasks:
+            print(f"- {t['id']}: {t['title']}")
+    else:
+        print("- (no closed tasks found under this epic)")
+    print()
+
+    if open_tasks:
+        print("## Tasks not yet closed [WARNING: epic incomplete]")
+        for t in open_tasks:
+            print(f"- {t['id']}: {t['title']} ({t.get('status', '?')})")
+        print()
+
+    print("## Open proposal ADRs")
+    if proposed_adrs:
+        for path, title in proposed_adrs:
+            print(f"- [proposed] {path} - {title}")
+    else:
+        print("- (none)")
+    print()
+
+    print("## Deferred decisions")
+    if deferred_adrs:
+        for path, title in deferred_adrs:
+            print(f"- [deferred] {path} - {title}")
+    else:
+        print("- (none)")
+    print()
+
+    print("## Known gaps")
+    print("<!-- List anything descoped, partially implemented, or that needs")
+    print("     revisiting. Gaps caught now are cheaper than gaps in production. -->")
+
+
+if __name__ == "__main__":
+    main()

@@ -37,9 +37,10 @@ grep -q 'nothing delegated' "$ROOT/src/components/Hero.astro" \
   && pass "Hero contains subheading"           || fail "Hero missing subheading copy"
 
 # Hero section is 50svh on mobile, full viewport on sm+ — @co-4
-grep -q 'h-\[65svh\]' "$ROOT/src/components/Hero.astro" \
-  && pass "Hero is 65svh on mobile"              || fail "Hero missing 65svh mobile height"
-grep -q 'sm:min-h-svh' "$ROOT/src/components/Hero.astro" \
+grep -q 'h-\[65vh\]' "$ROOT/src/components/Hero.astro" \
+  && pass "Hero is 65vh on mobile (vh for broad browser support)" \
+  || fail "Hero missing 65vh mobile height"
+grep -q 'sm:min-h-screen' "$ROOT/src/components/Hero.astro" \
   && pass "Hero is full viewport on sm+"         || fail "Hero missing full-viewport height on sm+"
 
 # CTA links to contact section — @cl-4

@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+# scripts/new-adr — ADR scaffolding script
+#
+# Purpose: Auto-increment the ADR number and create a correctly structured
+# ADR file in adrs/, eliminating numbering collisions and inconsistent format.
+# Satisfies: @spec-4, @spec-5
+#
+# Usage:
+#   scripts/new-adr "Title of the decision"
+#   scripts/new-adr "Title of the decision" --blocked <beads-task-id>
+#
+# Output: prints the path of the created file
+#
+# ADR status lifecycle:
+#   Proposed  → user decision required now
+#   Accepted  → decision made and recorded
+#   Deferred  → consciously postponed; will be decided in a future epic
+#   Rejected  → option explicitly ruled out
+
+import sys
+import re
+from pathlib import Path
+
+ADR_DIR = Path("adrs")
+
+
+def next_adr_number():
+    """Find the highest existing ADR number and return the next one."""
+    ADR_DIR.mkdir(exist_ok=True)
+    existing = [
+        int(m.group(1))
+        for f in ADR_DIR.glob("ADR-*.md")
+        if (m := re.match(r"ADR-(\d+)", f.name))
+    ]
+    return max(existing, default=0) + 1
+
+
+def slugify(title):
+    """Convert a title to a filesystem-safe slug."""
+    slug = title.lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", slug)
+    return slug.strip("-")
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        print("Usage: scripts/new-adr \"Title\" [--blocked <task-id>]", file=sys.stderr)
+        sys.exit(1)
+
+    # Parse --blocked flag
+    blocked_task = None
+    if "--blocked" in args:
+        idx = args.index("--blocked")
+        if idx + 1 >= len(args):
+            print("Error: --blocked requires a task ID argument", file=sys.stderr)
+            sys.exit(1)
+        blocked_task = args[idx + 1]
+        args = args[:idx] + args[idx + 2:]
+
+    title = " ".join(args)
+    number = next_adr_number()
+    slug = slugify(title)
+    file_path = ADR_DIR / f"ADR-{number:03d}-{slug}.md"
+
+    # Blocked task field — only included for Proposed ADRs raised mid-task
+    blocked_field = (
+        f"\n**Blocked task:** {blocked_task}"
+        if blocked_task
+        else ""
+    )
+
+    template = f"""# ADR-{number:03d}: {title}
+
+**Status:** Proposed{blocked_field}
+
+## Decision
+<!-- State the decision clearly once it has been made. Leave blank until decided. -->
+
+## Context
+<!-- What is the situation that requires a decision? What constraints apply? -->
+
+## Options considered
+
+### Option A: <!-- name -->
+<!-- Describe the option. -->
+
+**Consequences:**
+- <!-- pro or con -->
+
+### Option B: <!-- name -->
+<!-- Describe the option. -->
+
+**Consequences:**
+- <!-- pro or con -->
+
+## Rationale
+<!-- Why was this option chosen over the others? Reference user constraints,
+     VISION.md outcomes, or prior ADR decisions where relevant. -->
+"""
+
+    file_path.write_text(template)
+    print(file_path)
+
+
+if __name__ == "__main__":
+    main()

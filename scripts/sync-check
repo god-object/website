@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+# scripts/sync-check — BDD scenario tag to Beads task coverage checker
+#
+# Purpose: Extract @tags from all .feature files and verify that each appears
+# in at least one Beads issue title or description. Uses exact tag matching
+# per ADR-004. Run before starting implementation on an epic.
+# Satisfies: @backlog-2
+#
+# Exit code: 0 if all tagged scenarios are covered, 1 if any gaps exist.
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+SPECS_DIR = Path("specs/bdd")
+
+
+def get_all_issue_text():
+    """Return a single string of all Beads issue titles and descriptions."""
+    try:
+        result = subprocess.run(
+            ["bd", "list", "--all", "--json"],
+            capture_output=True, text=True
+        )
+        issues = json.loads(result.stdout)
+        return " ".join(
+            f"{i.get('title', '')} {i.get('description', '')}"
+            for i in issues
+        )
+    except Exception:
+        return ""
+
+
+def extract_tagged_scenarios(feature_file):
+    """
+    Parse a .feature file and yield (tag, scenario_name) pairs.
+    A tag is a line matching @prefix-n immediately before a Scenario line.
+    Satisfies: ADR-004 — file-scoped @prefix-n tagging convention.
+    """
+    lines = feature_file.read_text().splitlines()
+    pending_tag = None
+    for line in lines:
+        stripped = line.strip()
+        # Capture scenario tags: lines that are solely @word-digits
+        if re.fullmatch(r"@[a-z][a-z0-9_-]*-\d+", stripped):
+            pending_tag = stripped
+            continue
+        # Pair the pending tag with the following Scenario line
+        m = re.match(r"Scenario(?:\s+Outline)?:\s+(.+)", stripped)
+        if m and pending_tag:
+            yield pending_tag, m.group(1).strip()
+            pending_tag = None
+            continue
+        # Any substantive non-blank, non-comment line resets the pending tag
+        if stripped and not stripped.startswith("#"):
+            pending_tag = None
+
+
+def main():
+    if not SPECS_DIR.exists():
+        print("No specs/bdd/ directory found — nothing to check.")
+        sys.exit(0)
+
+    issue_text = get_all_issue_text()
+    if not issue_text.strip():
+        print("No Beads issues found - create epics and tasks before running sync-check.")
+        sys.exit(1)
+
+    gaps = []
+    covered = 0
+
+    for feature_file in sorted(SPECS_DIR.glob("*.feature")):
+        for tag, scenario_name in extract_tagged_scenarios(feature_file):
+            if tag in issue_text:
+                covered += 1
+            else:
+                gaps.append(f"{feature_file.name}: {tag} - {scenario_name}")
+
+    total = covered + len(gaps)
+
+    if not gaps:
+        print(f"✓ All {total} tagged scenarios have Beads task coverage.")
+        sys.exit(0)
+    else:
+        print(f"✗ {len(gaps)} of {total} scenarios lack Beads task coverage:\n")
+        for gap in gaps:
+            print(f"  ✗ {gap}")
+        print()
+        print('Include the scenario tag in the task description, e.g.:')
+        print('  bd create "..." --description "Satisfies: @prefix-1"')
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

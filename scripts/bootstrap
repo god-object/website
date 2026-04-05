@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+# scripts/bootstrap — Session state summary for the Product Builder agent
+#
+# Purpose: Produce a compact briefing so the agent can reconstruct project
+# context at session start without reading every artifact individually.
+# Satisfies: @req-3
+#
+# Replaces the bash version, which had GNU/BSD portability issues.
+# Requires: python3, git, bd (all standard in a Product Builder project)
+
+import subprocess
+import sys
+import re
+from pathlib import Path
+
+
+def run(cmd, **kwargs):
+    """Run a shell command and return stdout, or empty string on failure."""
+    try:
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, **kwargs
+        )
+        return result.stdout.strip()
+    except Exception:
+        return ""
+
+
+def extract_mission(vision_path):
+    """Extract the full mission paragraph from VISION.md."""
+    lines = vision_path.read_text().splitlines()
+    in_mission = False
+    mission_lines = []
+    for line in lines:
+        if line.startswith("## Mission"):
+            in_mission = True
+            continue
+        if in_mission:
+            if line.startswith("## "):
+                break
+            if line.strip():
+                mission_lines.append(line.strip())
+    return " ".join(mission_lines)
+
+
+def find_proposal_adrs(adr_dir):
+    """Return list of (path, title, blocked_task) for all Proposed ADRs."""
+    results = []
+    if not adr_dir.exists():
+        return results
+    for f in sorted(adr_dir.glob("ADR-*.md")):
+        text = f.read_text()
+        if "**Status:** Proposed" not in text:
+            continue
+        title_match = re.match(r"^# (.+)", text)
+        title = title_match.group(1) if title_match else f.name
+        blocked_match = re.search(r"\*\*Blocked task:\*\*\s*(\S+)", text)
+        blocked = blocked_match.group(1) if blocked_match else None
+        results.append((f, title, blocked))
+    return results
+
+
+def main():
+    vision = Path("VISION.md")
+
+    print("=== Product Builder — Session Bootstrap ===")
+    print()
+
+    # -- Project identity -----------------------------------------------------
+    if not vision.exists():
+        print("No VISION.md found - requirements elicitation required.")
+        sys.exit(0)
+
+    project_name = vision.read_text().splitlines()[0].lstrip("# ").strip()
+    mission = extract_mission(vision)
+    print(f"Project : {project_name}")
+    print(f"Mission : {mission}")
+    print()
+
+    # -- Unblocked tasks from Beads -------------------------------------------
+    # bd ready is the canonical source of "what to do next"
+    print("--- Backlog ---")
+    ready = run("bd ready 2>/dev/null")
+    print(ready if ready else "(no unblocked tasks)")
+    print()
+
+    # -- Proposal ADRs awaiting a decision ------------------------------------
+    # Surfaces blocked decisions so the agent prioritises resolving them.
+    # Where an ADR records a blocked task, that link is shown explicitly.
+    print("--- Open ADRs awaiting decision ---")
+    proposals = find_proposal_adrs(Path("adrs"))
+    if proposals:
+        for path, title, blocked in proposals:
+            suffix = f" [blocks: {blocked}]" if blocked else ""
+            print(f"  [proposed] {path} - {title}{suffix}")
+    else:
+        print("  (none)")
+    print()
+
+    # -- Recent commits -------------------------------------------------------
+    print("--- Recent commits ---")
+    log = run("git log --oneline -5 2>/dev/null")
+    print(log if log else "  (no git history)")
+    print()
+
+    print("=== Run `bd ready` for full unblocked task list ===")
+
+
+if __name__ == "__main__":
+    main()

@@ -3,6 +3,14 @@
 .dolt/
 *.db
 
+# Beads runtime files
+.beads/dolt-monitor.pid
+.beads/dolt-server.activity
+.beads/dolt-server.port
+
+# Playwright test output
+test-results/
+
 # Astro build output
 dist/
 .astro/
@@ -13,3 +21,6 @@ node_modules/
 # Env files
 .env
 .env.*
+
+# Local Netlify folder
+.netlify

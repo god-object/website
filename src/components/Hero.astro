@@ -9,11 +9,10 @@ import heroSrc from "../assets/hero.png";
   @co-1 — headline visible above the fold.
 -->
 <!--
-  h-[65svh] on mobile, full viewport on sm+.
-  Section height is driven by py on the text wrapper, so we use a fixed height
-  with overflow-hidden to actually constrain it on small screens. @co-4
+  h-[65vh] on mobile, full viewport on sm+. Uses vh (not svh) for broad
+  browser support — svh silently fails in older Safari on iOS. @co-4
 -->
-<section class="relative h-[65svh] sm:min-h-svh flex flex-col items-center justify-center text-center overflow-hidden" aria-label="Hero">
+<section class="relative h-[65vh] sm:min-h-screen flex flex-col items-center justify-center text-center overflow-hidden" aria-label="Hero">
 
   <!--
     Hero image — absolute fill behind all content.
