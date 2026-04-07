@@ -1,97 +1,83 @@
-#!/usr/bin/env python3
-# scripts/sync-check — BDD scenario tag to Beads task coverage checker
-#
-# Purpose: Extract @tags from all .feature files and verify that each appears
-# in at least one Beads issue title or description. Uses exact tag matching
-# per ADR-004. Run before starting implementation on an epic.
-# Satisfies: @backlog-2
-#
-# Exit code: 0 if all tagged scenarios are covered, 1 if any gaps exist.
+#!/bin/sh
+#|
+exec ros -Q -- $0 "$@"
+|#
+;; scripts/sync-check — BDD scenario tag to Beads task coverage checker
+;;
+;; Purpose: Extract @tags from all .feature files and verify that each appears
+;; in at least one Beads issue title or description. Uses exact tag matching
+;; per ADR-004. Run before starting implementation on an epic.
+;; Satisfies: @backlog-2
+;;
+;; Exit code: 0 if all tagged scenarios are covered, 1 if any gaps exist.
 
-import json
-import re
-import subprocess
-import sys
-from pathlib import Path
+(ql:quickload '(:cl-ppcre :yason) :silent t)
 
-SPECS_DIR = Path("specs/bdd")
+(defun get-all-issue-text ()
+  ;; Return a single string of all Beads issue titles and descriptions.
+  (handler-case
+    (let* ((output (uiop:run-program '("bd" "list" "--all" "--json")
+                                     :output :string :ignore-error-status t))
+           (issues (yason:parse output)))
+      (format nil "~{~a~^ ~}"
+              (loop for issue across issues
+                    collect (format nil "~a ~a"
+                                    (gethash "title" issue "")
+                                    (gethash "description" issue "")))))
+    (error () "")))
 
+(defun extract-tagged-scenarios-from-lines (lines)
+  ;; Parse a list of lines and return a list of (tag . scenario-name) pairs.
+  ;; A tag is a line matching @prefix-n immediately before a Scenario line.
+  ;; Satisfies: ADR-004 — file-scoped @prefix-n tagging convention.
+  (let ((pending-tag nil)
+        (results '()))
+    (dolist (line lines)
+      (let ((stripped (string-trim '(#\Space #\Tab) line)))
+        (cond
+          ((cl-ppcre:scan "^@[a-z][a-z0-9_-]*-\\d+$" stripped)
+           (setf pending-tag stripped))
+          ((and pending-tag
+                (cl-ppcre:scan "^Scenario(?:\\s+Outline)?:" stripped))
+           (let ((name (cl-ppcre:regex-replace "^Scenario(?:\\s+Outline)?:\\s*" stripped "")))
+             (push (cons pending-tag (string-trim '(#\Space) name)) results))
+           (setf pending-tag nil))
+          ((and (plusp (length stripped))
+                (char/= (char stripped 0) #\#))
+           (setf pending-tag nil)))))
+    (nreverse results)))
 
-def get_all_issue_text():
-    """Return a single string of all Beads issue titles and descriptions."""
-    try:
-        result = subprocess.run(
-            ["bd", "list", "--all", "--json"],
-            capture_output=True, text=True
-        )
-        issues = json.loads(result.stdout)
-        return " ".join(
-            f"{i.get('title', '')} {i.get('description', '')}"
-            for i in issues
-        )
-    except Exception:
-        return ""
+(defun extract-tagged-scenarios (feature-file)
+  ;; Read a .feature file and return (tag . scenario-name) pairs.
+  (extract-tagged-scenarios-from-lines (uiop:read-file-lines feature-file)))
 
-
-def extract_tagged_scenarios(feature_file):
-    """
-    Parse a .feature file and yield (tag, scenario_name) pairs.
-    A tag is a line matching @prefix-n immediately before a Scenario line.
-    Satisfies: ADR-004 — file-scoped @prefix-n tagging convention.
-    """
-    lines = feature_file.read_text().splitlines()
-    pending_tag = None
-    for line in lines:
-        stripped = line.strip()
-        # Capture scenario tags: lines that are solely @word-digits
-        if re.fullmatch(r"@[a-z][a-z0-9_-]*-\d+", stripped):
-            pending_tag = stripped
-            continue
-        # Pair the pending tag with the following Scenario line
-        m = re.match(r"Scenario(?:\s+Outline)?:\s+(.+)", stripped)
-        if m and pending_tag:
-            yield pending_tag, m.group(1).strip()
-            pending_tag = None
-            continue
-        # Any substantive non-blank, non-comment line resets the pending tag
-        if stripped and not stripped.startswith("#"):
-            pending_tag = None
-
-
-def main():
-    if not SPECS_DIR.exists():
-        print("No specs/bdd/ directory found — nothing to check.")
-        sys.exit(0)
-
-    issue_text = get_all_issue_text()
-    if not issue_text.strip():
-        print("No Beads issues found - create epics and tasks before running sync-check.")
-        sys.exit(1)
-
-    gaps = []
-    covered = 0
-
-    for feature_file in sorted(SPECS_DIR.glob("*.feature")):
-        for tag, scenario_name in extract_tagged_scenarios(feature_file):
-            if tag in issue_text:
-                covered += 1
-            else:
-                gaps.append(f"{feature_file.name}: {tag} - {scenario_name}")
-
-    total = covered + len(gaps)
-
-    if not gaps:
-        print(f"✓ All {total} tagged scenarios have Beads task coverage.")
-        sys.exit(0)
-    else:
-        print(f"✗ {len(gaps)} of {total} scenarios lack Beads task coverage:\n")
-        for gap in gaps:
-            print(f"  ✗ {gap}")
-        print()
-        print('Include the scenario tag in the task description, e.g.:')
-        print('  bd create "..." --description "Satisfies: @prefix-1"')
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+(defun main (&rest argv)
+  (declare (ignore argv))
+  (let ((specs-dir (merge-pathnames "specs/bdd/" (uiop:getcwd))))
+    (unless (uiop:directory-exists-p specs-dir)
+      (format t "No specs/bdd/ directory found — nothing to check.~%")
+      (uiop:quit 0))
+    (let ((issue-text (get-all-issue-text)))
+      (when (zerop (length (string-trim '(#\Space #\Newline) issue-text)))
+        (format t "No Beads issues found - create epics and tasks before running sync-check.~%")
+        (uiop:quit 1))
+      (let ((gaps '()) (covered 0))
+        (dolist (feature-file (sort (uiop:directory-files specs-dir "*.feature")
+                                    #'string< :key #'namestring))
+          (dolist (pair (extract-tagged-scenarios feature-file))
+            (if (search (car pair) issue-text)
+                (incf covered)
+                (push (format nil "~a: ~a - ~a"
+                              (file-namestring feature-file) (car pair) (cdr pair))
+                      gaps))))
+        (setf gaps (nreverse gaps))
+        (let ((total (+ covered (length gaps))))
+          (if (null gaps)
+              (progn (format t "✓ All ~a tagged scenarios have Beads task coverage.~%" total)
+                     (uiop:quit 0))
+              (progn
+                (format t "✗ ~a of ~a scenarios lack Beads task coverage:~%~%" (length gaps) total)
+                (dolist (gap gaps) (format t "  ✗ ~a~%" gap))
+                (format t "~%Include the scenario tag in the task description, e.g.:~%")
+                (format t "  bd create \"...\" --description \"Satisfies: @prefix-1\"~%")
+                (uiop:quit 1))))))))

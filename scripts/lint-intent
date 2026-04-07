@@ -1,138 +1,112 @@
-#!/usr/bin/env python3
-# scripts/lint-intent — Chain of intent validator (pre-commit hook)
-#
-# Purpose: Enforce that the chain of intent stays unbroken at commit time.
-# Installed as .git/hooks/pre-commit. Checks:
-#   1. Staged source files with significant additions contain at least one
-#      comment line — a proxy for intent documentation (ADR-003).
-#   2. No staged file introduces a bare TODO without a Beads task reference.
-# Satisfies: @dev-3
-#
-# Install:
-#   cp scripts/lint-intent .git/hooks/pre-commit
-#   chmod +x .git/hooks/pre-commit
-#
-# Or run manually before committing:
-#   scripts/lint-intent
+#!/bin/sh
+#|
+exec ros -Q -- $0 "$@"
+|#
+;; scripts/lint-intent — Chain of intent validator (pre-commit hook)
+;;
+;; Purpose: Enforce that the chain of intent stays unbroken at commit time.
+;; Installed as .git/hooks/pre-commit. Checks:
+;;   1. Staged source files with significant additions contain at least one
+;;      comment line — a proxy for intent documentation.
+;;   2. No staged file introduces a bare TODO without a Beads task reference.
+;; Satisfies: @dev-3
+;;
+;; Install:
+;;   cp scripts/lint-intent .git/hooks/pre-commit
+;;   chmod +x .git/hooks/pre-commit
 
-import re
-import subprocess
-import sys
-from pathlib import Path
+(ql:quickload :cl-ppcre :silent t)
 
-# Files with these extensions are exempt from comment-density checks —
-# they are data/config files, not intent-bearing source code.
-EXEMPT_EXTENSIONS = {
-    ".md", ".json", ".lock", ".sum", ".mod", ".txt",
-    ".yaml", ".yml", ".toml", ".env", ".csv", ".xml",
-}
+;; Files with these extensions are exempt from comment-density checks.
+(defparameter *exempt-extensions*
+  '(".md" ".json" ".lock" ".sum" ".mod" ".txt"
+    ".yaml" ".yml" ".toml" ".env" ".csv" ".xml"))
 
-# Minimum added lines before we require at least one comment.
-COMMENT_THRESHOLD = 10
+(defparameter *comment-threshold* 10)
 
-# Comment markers by file extension. Falls back to checking all markers.
-COMMENT_MARKERS = {
-    ".py":   ["#"],
-    ".js":   ["//", "/*", "*"],
-    ".ts":   ["//", "/*", "*"],
-    ".go":   ["//", "/*"],
-    ".rs":   ["//", "/*"],
-    ".java": ["//", "/*", "*"],
-    ".rb":   ["#"],
-    ".sh":   ["#"],
-    ".bash": ["#"],
-}
-DEFAULT_MARKERS = ["//", "#", "--", "/*", "*", "<!--"]
+(defparameter *comment-markers*
+  '((".py"   . ("#"))
+    (".js"   . ("//" "/*" "*"))
+    (".ts"   . ("//" "/*" "*"))
+    (".go"   . ("//" "/*"))
+    (".rs"   . ("//" "/*"))
+    (".java" . ("//" "/*" "*"))
+    (".rb"   . ("#"))
+    (".sh"   . ("#"))
+    (".bash" . ("#"))
+    (".lisp" . (";"))
+    (".cl"   . (";"))))
 
-# Beads task ID pattern — product-builder-abc or any project prefix
-TASK_REF_PATTERN = re.compile(r"[a-z][a-z0-9]+-[a-z0-9]+", re.IGNORECASE)
+(defparameter *default-markers* '("//" "#" "--" "/*" "*" "<!--" ";"))
+(defparameter *task-ref-pattern* "[a-z][a-z0-9]+-[a-z0-9]+")
 
+(defun run-command (cmd)
+  (handler-case
+    (uiop:run-program (list "sh" "-c" cmd) :output :string :ignore-error-status t)
+    (error () "")))
 
-def run(cmd):
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    return result.stdout
+(defun count-added-lines (diff)
+  ;; Count lines added in a diff (lines starting with + but not ++).
+  (loop for line in (uiop:split-string diff :separator '(#\Newline))
+        count (and (plusp (length line))
+                   (char= (char line 0) #\+)
+                   (not (uiop:string-prefix-p "++" line)))))
 
+(defun has-comment-p (diff markers)
+  ;; Return true if the diff contains at least one added comment line.
+  (dolist (line (uiop:split-string diff :separator '(#\Newline)))
+    (when (and (plusp (length line))
+               (char= (char line 0) #\+)
+               (not (uiop:string-prefix-p "++" line)))
+      (let ((stripped (string-left-trim '(#\Space #\Tab) (subseq line 1))))
+        (dolist (marker markers)
+          (when (uiop:string-prefix-p marker stripped)
+            (return-from has-comment-p t))))))
+  nil)
 
-def get_staged_diff(file_path):
-    return run(f"git diff --staged -- {file_path}")
+(defun find-bare-todos (diff)
+  ;; Return added lines with TODOs not followed by a Beads task reference.
+  (loop for line in (uiop:split-string diff :separator '(#\Newline))
+        when (and (plusp (length line))
+                  (char= (char line 0) #\+)
+                  (not (uiop:string-prefix-p "++" line))
+                  (search "TODO" line)
+                  (not (cl-ppcre:scan *task-ref-pattern*
+                                      (subseq line (+ (search "TODO" line) 4)))))
+        collect (string-right-trim '(#\Space #\Return) (subseq line 1))))
 
+(defun file-extension (path-string)
+  ;; Return the lowercased extension including dot, or empty string.
+  (let* ((type (pathname-type (pathname path-string))))
+    (if (and type (not (eq type :unspecific)))
+        (concatenate 'string "." (string-downcase type))
+        "")))
 
-def count_added_lines(diff):
-    """Count lines added in a diff (lines starting with + but not ++)."""
-    return sum(1 for line in diff.splitlines() if line.startswith("+") and not line.startswith("++"))
-
-
-def has_comment(diff, markers):
-    """Return True if the diff contains at least one added comment line."""
-    for line in diff.splitlines():
-        if not line.startswith("+") or line.startswith("++"):
-            continue
-        stripped = line[1:].lstrip()
-        if any(stripped.startswith(m) for m in markers):
-            return True
-    return False
-
-
-def find_bare_todos(diff):
-    """
-    Return lines with TODOs not followed by a Beads task reference.
-    A valid TODO looks like: TODO(product-builder-abc) or TODO: product-builder-abc
-    """
-    bare = []
-    for line in diff.splitlines():
-        if not line.startswith("+") or line.startswith("++"):
-            continue
-        if "TODO" not in line:
-            continue
-        # Check if a task reference appears on the same line
-        after_todo = line[line.index("TODO"):]
-        if not TASK_REF_PATTERN.search(after_todo):
-            bare.append(line[1:].rstrip())  # strip leading +
-    return bare
-
-
-def main():
-    staged_files = run("git diff --staged --name-only").strip().splitlines()
-    errors = []
-
-    for file_str in staged_files:
-        file_path = Path(file_str)
-        if not file_path.exists():
-            continue  # deleted file
-        if file_path.suffix.lower() in EXEMPT_EXTENSIONS:
-            continue
-
-        diff = get_staged_diff(file_str)
-        if not diff:
-            continue
-
-        added = count_added_lines(diff)
-        markers = COMMENT_MARKERS.get(file_path.suffix.lower(), DEFAULT_MARKERS)
-
-        # Check 1: significant additions must include at least one comment
-        if added >= COMMENT_THRESHOLD and not has_comment(diff, markers):
-            errors.append(
-                f"{file_str}: {added} lines added with no comments"
-                f" - document intent (see ADR-003)"
-            )
-
-        # Check 2: no bare TODOs without task references
-        for todo_line in find_bare_todos(diff):
-            errors.append(
-                f"{file_str}: bare TODO without task reference: {todo_line!r}"
-                f" - use TODO(<task-id>) instead"
-            )
-
-    if not errors:
-        print("✓ lint-intent: chain of intent checks passed.")
-        sys.exit(0)
-    else:
-        print("✗ lint-intent: chain of intent violations:\n")
-        for err in errors:
-            print(f"  ✗ {err}")
-        print("\nFix the above before committing. See ADR-003.")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+(defun main (&rest argv)
+  (declare (ignore argv))
+  (let* ((staged-output (run-command "git diff --staged --name-only"))
+         (staged-files (remove "" (uiop:split-string staged-output :separator '(#\Newline))
+                               :test #'string=))
+         (errors '()))
+    (dolist (file-str staged-files)
+      (let ((ext (file-extension file-str)))
+        (when (and (probe-file file-str)
+                   (not (member ext *exempt-extensions* :test #'string=)))
+          (let* ((diff (run-command (format nil "git diff --staged -- ~a" file-str)))
+                 (added (count-added-lines diff))
+                 (markers (or (cdr (assoc ext *comment-markers* :test #'string=))
+                              *default-markers*)))
+            (when (and (>= added *comment-threshold*) (not (has-comment-p diff markers)))
+              (push (format nil "~a: ~a lines added with no comments - document intent"
+                            file-str added) errors))
+            (dolist (todo-line (find-bare-todos diff))
+              (push (format nil "~a: bare TODO without task reference: ~s - use TODO(<task-id>) instead"
+                            file-str todo-line) errors))))))
+    (setf errors (nreverse errors))
+    (if (null errors)
+        (progn (format t "✓ lint-intent: chain of intent checks passed.~%") (uiop:quit 0))
+        (progn
+          (format t "✗ lint-intent: chain of intent violations:~%~%")
+          (dolist (err errors) (format t "  ✗ ~a~%" err))
+          (format t "~%Fix the above before committing.~%")
+          (uiop:quit 1)))))

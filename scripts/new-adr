@@ -1,107 +1,80 @@
-#!/usr/bin/env python3
-# scripts/new-adr — ADR scaffolding script
-#
-# Purpose: Auto-increment the ADR number and create a correctly structured
-# ADR file in adrs/, eliminating numbering collisions and inconsistent format.
-# Satisfies: @spec-4, @spec-5
-#
-# Usage:
-#   scripts/new-adr "Title of the decision"
-#   scripts/new-adr "Title of the decision" --blocked <beads-task-id>
-#
-# Output: prints the path of the created file
-#
-# ADR status lifecycle:
-#   Proposed  → user decision required now
-#   Accepted  → decision made and recorded
-#   Deferred  → consciously postponed; will be decided in a future epic
-#   Rejected  → option explicitly ruled out
+#!/bin/sh
+#|
+exec ros -Q -- $0 "$@"
+|#
+;; scripts/new-adr — ADR scaffolding script
+;;
+;; Purpose: Auto-increment the ADR number and create a correctly structured
+;; ADR file in adrs/, eliminating numbering collisions and inconsistent format.
+;; Satisfies: @spec-4, @spec-5
+;;
+;; Usage:
+;;   scripts/new-adr "Title of the decision"
+;;   scripts/new-adr "Title of the decision" --blocked <beads-task-id>
+;;
+;; Output: prints the path of the created file
+;;
+;; ADR status lifecycle:
+;;   Proposed  → user decision required now
+;;   Accepted  → decision made and recorded
+;;   Deferred  → consciously postponed; will be decided in a future epic
+;;   Rejected  → option explicitly ruled out
 
-import sys
-import re
-from pathlib import Path
+(ql:quickload :cl-ppcre :silent t)
 
-ADR_DIR = Path("adrs")
+(defun next-adr-number (adr-dir)
+  ;; Find the highest existing ADR number and return the next one.
+  (ensure-directories-exist (merge-pathnames "placeholder" adr-dir))
+  (let ((numbers
+          (loop for f in (uiop:directory-files adr-dir "ADR-*.md")
+                for name = (pathname-name f)
+                for match = (nth-value 1 (cl-ppcre:scan-to-strings "ADR-(\\d+)" name))
+                when match collect (parse-integer (aref match 0)))))
+    (1+ (if numbers (reduce #'max numbers) 0))))
 
+(defun slugify (title)
+  ;; Convert a title to a filesystem-safe slug.
+  (string-trim "-"
+    (cl-ppcre:regex-replace-all "[^a-z0-9]+"
+      (string-downcase title)
+      "-")))
 
-def next_adr_number():
-    """Find the highest existing ADR number and return the next one."""
-    ADR_DIR.mkdir(exist_ok=True)
-    existing = [
-        int(m.group(1))
-        for f in ADR_DIR.glob("ADR-*.md")
-        if (m := re.match(r"ADR-(\d+)", f.name))
-    ]
-    return max(existing, default=0) + 1
-
-
-def slugify(title):
-    """Convert a title to a filesystem-safe slug."""
-    slug = title.lower()
-    slug = re.sub(r"[^a-z0-9]+", "-", slug)
-    return slug.strip("-")
-
-
-def main():
-    args = sys.argv[1:]
-    if not args:
-        print("Usage: scripts/new-adr \"Title\" [--blocked <task-id>]", file=sys.stderr)
-        sys.exit(1)
-
-    # Parse --blocked flag
-    blocked_task = None
-    if "--blocked" in args:
-        idx = args.index("--blocked")
-        if idx + 1 >= len(args):
-            print("Error: --blocked requires a task ID argument", file=sys.stderr)
-            sys.exit(1)
-        blocked_task = args[idx + 1]
-        args = args[:idx] + args[idx + 2:]
-
-    title = " ".join(args)
-    number = next_adr_number()
-    slug = slugify(title)
-    file_path = ADR_DIR / f"ADR-{number:03d}-{slug}.md"
-
-    # Blocked task field — only included for Proposed ADRs raised mid-task
-    blocked_field = (
-        f"\n**Blocked task:** {blocked_task}"
-        if blocked_task
-        else ""
-    )
-
-    template = f"""# ADR-{number:03d}: {title}
-
-**Status:** Proposed{blocked_field}
-
-## Decision
-<!-- State the decision clearly once it has been made. Leave blank until decided. -->
-
-## Context
-<!-- What is the situation that requires a decision? What constraints apply? -->
-
-## Options considered
-
-### Option A: <!-- name -->
-<!-- Describe the option. -->
-
-**Consequences:**
-- <!-- pro or con -->
-
-### Option B: <!-- name -->
-<!-- Describe the option. -->
-
-**Consequences:**
-- <!-- pro or con -->
-
-## Rationale
-<!-- Why was this option chosen over the others? Reference user constraints,
-     VISION.md outcomes, or prior ADR decisions where relevant. -->
-"""
-
-    file_path.write_text(template)
-    print(file_path)
-
-
-if __name__ == "__main__":
-    main()
+(defun main (&rest argv)
+  (let ((args argv))
+    (when (null args)
+      (format *error-output* "Usage: scripts/new-adr \"Title\" [--blocked <task-id>]~%")
+      (uiop:quit 1))
+    (let* ((blocked-pos (position "--blocked" args :test #'string=))
+           (blocked-task (when blocked-pos
+                           (or (nth (1+ blocked-pos) args)
+                               (progn
+                                 (format *error-output*
+                                         "Error: --blocked requires a task ID argument~%")
+                                 (uiop:quit 1)))))
+           (clean-args (if blocked-pos
+                           (append (subseq args 0 blocked-pos)
+                                   (subseq args (min (+ blocked-pos 2) (length args))))
+                           args))
+           (title (format nil "~{~a~^ ~}" clean-args))
+           (adr-dir (merge-pathnames "adrs/" (uiop:getcwd)))
+           (number (next-adr-number adr-dir))
+           (slug (slugify title))
+           (file-path (merge-pathnames
+                        (format nil "ADR-~3,'0d-~a.md" number slug)
+                        adr-dir))
+           (blocked-field (if blocked-task
+                              (format nil "~%**Blocked task:** ~a" blocked-task)
+                              "")))
+      (with-open-file (out file-path :direction :output :if-does-not-exist :create)
+        (format out "# ADR-~3,'0d: ~a~2%**Status:** Proposed~a~2%\
+## Decision~%<!-- State the decision clearly once it has been made. Leave blank until decided. -->~2%\
+## Context~%<!-- What is the situation that requires a decision? What constraints apply? -->~2%\
+## Options considered~2%\
+### Option A: <!-- name -->~%<!-- Describe the option. -->~2%\
+**Consequences:**~%- <!-- pro or con -->~2%\
+### Option B: <!-- name -->~%<!-- Describe the option. -->~2%\
+**Consequences:**~%- <!-- pro or con -->~2%\
+## Rationale~%<!-- Why was this option chosen over the others? Reference user constraints,~%\
+     VISION.md outcomes, or prior ADR decisions where relevant. -->~%"
+                number title blocked-field))
+      (format t "~a~%" (uiop:native-namestring file-path)))))
